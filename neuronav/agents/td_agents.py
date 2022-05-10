@@ -30,8 +30,11 @@ class TDQ(BaseAgent):
         else:
             self.Q = Q_init
 
+    def q_estimate(self, state):
+        return np.matmul(state, self.Q.T)
+
     def sample_action(self, state):
-        Qs = self.Q[:, state]
+        Qs = self.q_estimate(state)
         if self.poltype == "softmax":
             action = npr.choice(self.action_size, p=utils.softmax(self.beta * Qs))
         else:
@@ -48,17 +51,17 @@ class TDQ(BaseAgent):
 
         # determines whether update is on-policy or off-policy
         if next_exp is None:
-            s_a_1 = np.argmax(self.Q[:, s_1])
+            s_a_1 = np.argmax(self.q_estimate(s_1))
         else:
             s_a_1 = next_exp[1]
 
         r = current_exp[3]
 
-        q_error = r + self.gamma * self.Q[s_a_1, s_1] - self.Q[s_a, s]
+        q_error = r + self.gamma * self.q_estimate(s_1)[s_a_1] - self.q_estimate(s)[s_a]
 
         if not prospective:
             # actually perform update to Q if not prospective
-            self.Q[s_a, s] += self.lr * q_error
+            self.Q[s_a, :] += self.lr * q_error * s
         return q_error
 
     def _update(self, current_exp, **kwargs):
@@ -104,7 +107,7 @@ class TDAC(BaseAgent):
         return np.matmul(state, self.a_w)
 
     def sample_action(self, state):
-        if type(state) != np.array:
+        if type(state) is int:
             state = utils.onehot(state, self.state_size)
         logits = self.actor(state)
         if self.poltype == "softmax":
@@ -119,7 +122,7 @@ class TDAC(BaseAgent):
 
     def _update(self, current_exp):
         state, action, state_next, reward, done = current_exp
-        if type(state) != np.array:
+        if type(state) is int:
             state = utils.onehot(state, self.state_size)
             state_next = utils.onehot(state_next, self.state_size)
         if not done:
@@ -166,8 +169,15 @@ class TDSR(BaseAgent):
 
         self.w = np.zeros(state_size)
 
+    def m_estimate(self, state):
+        return state @ self.M
+
     def Q_estimates(self, state):
-        return self.M[:, state, :] @ self.w
+        ms = self.m_estimate(state)
+        return ms @ self.w
+
+    def w_estimates(self, state):
+        return state @ self.w
 
     def sample_action(self, state):
         if self.poltype == "softmax":
@@ -184,8 +194,8 @@ class TDSR(BaseAgent):
     def update_w(self, current_exp):
         s, a, s_1, r, _ = current_exp
         if self.weights == "direct":
-            error = r - self.w[s_1]
-            self.w[s_1] += self.lr * error
+            error = r - self.w_estimates(s_1)
+            self.w += self.lr * error * s_1
         elif self.weights == "td":
             Vs = self.Q_estimates(s).max()
             Vs_1 = self.Q_estimates(s_1).max()
@@ -209,21 +219,28 @@ class TDSR(BaseAgent):
 
         r = current_exp[3]
         d = current_exp[4]
-        I = utils.onehot(s, self.state_size)
 
         if d:
-            m_error = (
-                I + self.gamma * utils.onehot(s_1, self.state_size) - self.M[s_a, s, :]
-            )
+            m_error = s + self.gamma * s_1 - self.m_estimate(s)[s_a]
         else:
             if self.goal_biased_sr:
-                m_error = I + self.gamma * self.M[s_a_1, s_1, :] - self.M[s_a, s, :]
+                m_error = (
+                    s
+                    + self.gamma * self.m_estimate(s_1)[s_a_1]
+                    - self.m_estimate(s)[s_a]
+                )
             else:
-                m_error = I + self.gamma * self.M[:, s_1, :].mean(0) - self.M[s_a, s, :]
+                m_error = (
+                    s
+                    + self.gamma * self.m_estimate(s_1).mean(0)
+                    - self.m_estimate(s)[s_a]
+                )
 
         if not prospective:
             # actually perform update to SR if not prospective
-            self.M[s_a, s, :] += self.lr * m_error
+            self.M[s_a, :, :] += self.lr * (
+                np.expand_dims(s, 1) @ np.expand_dims(m_error, 0)
+            )
         return m_error
 
     def _update(self, current_exp, **kwargs):
