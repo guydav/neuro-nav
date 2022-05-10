@@ -18,7 +18,7 @@ class GraphEnv(Env):
     """
 
     def __init__(
-        self, graph_structure=GraphStructure.linear, obs_type=GraphObsType.index
+        self, graph_structure=GraphStructure.linear, obs_type=GraphObsType.onehot
     ):
         if isinstance(graph_structure, str):
             graph_structure = GraphStructure(graph_structure)

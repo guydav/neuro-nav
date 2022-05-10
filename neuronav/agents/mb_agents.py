@@ -35,8 +35,7 @@ class MBV(BaseAgent):
         self.base_Q = np.zeros([self.action_size, self.state_size])
 
     def Q_estimates(self, state):
-        Q = self.Q
-        return Q[:, state]
+        return state @ self.Q.T
 
     def sample_action(self, state):
         if self.poltype == "softmax":
@@ -53,8 +52,8 @@ class MBV(BaseAgent):
     def update_w(self, current_exp):
         s, a, s_1, r, _ = current_exp
         if self.weights == "direct":
-            error = r - self.w[s_1]
-            self.w[s_1] += self.lr * error
+            error = r - (s_1 @ self.w)
+            self.w += self.lr * error * s_1
         self.Q
         return np.linalg.norm(error)
 
@@ -63,7 +62,7 @@ class MBV(BaseAgent):
         s_a = current_exp[1]
         s_1 = current_exp[2]
 
-        self.T[s_a, s] = utils.onehot(s_1, self.state_size)
+        self.T[s_a] = np.expand_dims(s, 1) @ np.expand_dims(s_1, 0)
 
         return 0.0
 

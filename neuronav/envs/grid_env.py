@@ -36,7 +36,7 @@ class GridEnv(Env):
         self,
         topography=GridTopography.empty,
         grid_size=GridSize.small,
-        obs_type=GridObsType.index,
+        obs_type=GridObsType.onehot,
         orientation_type=OrientationType.fixed,
     ):
         self.blocks, self.agent_start_pos, self.topo_reward_locs = generate_topography(

@@ -58,68 +58,68 @@ def test_grid_topo():
 
 
 def test_td_q():
-    env = GraphEnv(obs_type=GraphObsType.index)
+    env = GraphEnv(obs_type=GraphObsType.onehot)
     obs = env.reset()
-    agent = TDQ(env.state_size, env.action_space.n)
+    agent = TDQ(env.observation_space.shape[0], env.action_space.n)
     _ = agent.sample_action(obs)
 
 
 def test_td_ac():
-    env = GraphEnv(obs_type=GraphObsType.index)
+    env = GraphEnv(obs_type=GraphObsType.onehot)
     obs = env.reset()
-    agent = TDAC(env.state_size, env.action_space.n)
+    agent = TDAC(env.observation_space.shape[0], env.action_space.n)
     _ = agent.sample_action(obs)
 
 
 def test_td_sr():
-    env = GraphEnv(obs_type=GraphObsType.index)
+    env = GraphEnv(obs_type=GraphObsType.onehot)
     obs = env.reset()
-    agent = TDSR(env.state_size, env.action_space.n)
+    agent = TDSR(env.observation_space.shape[0], env.action_space.n)
     _ = agent.sample_action(obs)
 
 
 def test_dyna_q():
-    env = GraphEnv(obs_type=GraphObsType.index)
+    env = GraphEnv(obs_type=GraphObsType.onehot)
     obs = env.reset()
-    agent = DynaQ(env.state_size, env.action_space.n)
+    agent = DynaQ(env.observation_space.shape[0], env.action_space.n)
     _ = agent.sample_action(obs)
 
 
 def test_dyna_ac():
-    env = GraphEnv(obs_type=GraphObsType.index)
+    env = GraphEnv(obs_type=GraphObsType.onehot)
     obs = env.reset()
-    agent = DynaAC(env.state_size, env.action_space.n)
+    agent = DynaAC(env.observation_space.shape[0], env.action_space.n)
     _ = agent.sample_action(obs)
 
 
 def test_dyna_sr():
-    env = GraphEnv(obs_type=GraphObsType.index)
+    env = GraphEnv(obs_type=GraphObsType.onehot)
     obs = env.reset()
-    agent = DynaSR(env.state_size, env.action_space.n)
+    agent = DynaSR(env.observation_space.shape[0], env.action_space.n)
     _ = agent.sample_action(obs)
 
 
 def test_mbv():
-    env = GraphEnv(obs_type=GraphObsType.index)
+    env = GraphEnv(obs_type=GraphObsType.onehot)
     obs = env.reset()
-    agent = MBV(env.state_size, env.action_space.n)
+    agent = MBV(env.observation_space.shape[0], env.action_space.n)
     _ = agent.sample_action(obs)
 
 
 def test_srmb():
-    env = GraphEnv(obs_type=GraphObsType.index)
+    env = GraphEnv(obs_type=GraphObsType.onehot)
     obs = env.reset()
-    agent = SRMB(env.state_size, env.action_space.n)
+    agent = SRMB(env.observation_space.shape[0], env.action_space.n)
     _ = agent.sample_action(obs)
 
 
 def test_graph_episode():
     graph_env = GraphEnv()
-    graph_agent = TDQ(graph_env.state_size, graph_env.action_space.n)
+    graph_agent = TDQ(graph_env.observation_space.shape[0], graph_env.action_space.n)
     _, _ = run_episode(graph_env, graph_agent, 100)
 
 
 def test_grid_episode():
     grid_env = GridEnv()
-    grid_agent = TDQ(grid_env.state_size, grid_env.action_space.n)
+    grid_agent = TDQ(grid_env.observation_space.shape[0], grid_env.action_space.n)
     _, _ = run_episode(grid_env, grid_agent, 100)

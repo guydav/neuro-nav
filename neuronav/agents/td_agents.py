@@ -31,7 +31,7 @@ class TDQ(BaseAgent):
             self.Q = Q_init
 
     def q_estimate(self, state):
-        return np.matmul(state, self.Q.T)
+        return state @ self.Q.T
 
     def sample_action(self, state):
         Qs = self.q_estimate(state)
