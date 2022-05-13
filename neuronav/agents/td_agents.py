@@ -172,33 +172,33 @@ class TDSR(BaseAgent):
     def m_estimate(self, state):
         return state @ self.M
 
-    def Q_estimates(self, state):
+    def q_estimate(self, state):
         ms = self.m_estimate(state)
         return ms @ self.w
 
-    def w_estimates(self, state):
+    def w_estimate(self, state):
         return state @ self.w
 
     def sample_action(self, state):
         if self.poltype == "softmax":
-            Qs = self.Q_estimates(state)
+            Qs = self.q_estimate(state)
             action = npr.choice(self.action_size, p=utils.softmax(self.beta * Qs))
         else:
             if npr.rand() < self.epsilon:
                 action = npr.choice(self.action_size)
             else:
-                Qs = self.Q_estimates(state)
+                Qs = self.q_estimate(state)
                 action = npr.choice(np.flatnonzero(np.isclose(Qs, Qs.max())))
         return action
 
     def update_w(self, current_exp):
         s, a, s_1, r, _ = current_exp
         if self.weights == "direct":
-            error = r - self.w_estimates(s_1)
+            error = r - self.w_estimate(s_1)
             self.w += self.lr * error * s_1
         elif self.weights == "td":
-            Vs = self.Q_estimates(s).max()
-            Vs_1 = self.Q_estimates(s_1).max()
+            Vs = self.q_estimate(s).max()
+            Vs_1 = self.q_estimate(s_1).max()
             delta = r + self.gamma * Vs_1 - Vs
             # epsilon and beta are hard-coded, need to improve this
             M = self.get_M_states(epsilon=1e-1, beta=5)
@@ -213,7 +213,7 @@ class TDSR(BaseAgent):
 
         # determines whether update is on-policy or off-policy
         if next_exp is None:
-            s_a_1 = np.argmax(self.Q_estimates(s_1))
+            s_a_1 = np.argmax(self.q_estimate(s_1))
         else:
             s_a_1 = next_exp[1]
 

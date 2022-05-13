@@ -34,18 +34,18 @@ class MBV(BaseAgent):
         self.w = np.zeros(state_size)
         self.base_Q = np.zeros([self.action_size, self.state_size])
 
-    def Q_estimates(self, state):
+    def q_estimate(self, state):
         return state @ self.Q.T
 
     def sample_action(self, state):
         if self.poltype == "softmax":
-            Qs = self.Q_estimates(state)
+            Qs = self.q_estimate(state)
             action = npr.choice(self.action_size, p=utils.softmax(self.beta * Qs))
         else:
             if npr.rand() < self.epsilon:
                 action = npr.choice(self.action_size)
             else:
-                Qs = self.Q_estimates(state)
+                Qs = self.q_estimate(state)
                 action = npr.choice(np.flatnonzero(np.isclose(Qs, Qs.max())))
         return action
 
@@ -62,7 +62,8 @@ class MBV(BaseAgent):
         s_a = current_exp[1]
         s_1 = current_exp[2]
 
-        self.T[s_a] = np.expand_dims(s, 1) @ np.expand_dims(s_1, 0)
+        s = np.argmax(s)
+        self.T[s_a, s] = s_1
 
         return 0.0
 
@@ -136,8 +137,8 @@ class SRMB(BaseAgent):
         self.SR_agent._update(current_exp)
 
     def Q_estimates(self, state):
-        mb_q = self.MB_agent.Q_estimates(state)
-        sr_q = self.SR_agent.Q_estimates(state)
+        mb_q = self.MB_agent.q_estimate(state)
+        sr_q = self.SR_agent.q_estimate(state)
         return mb_q * self.mix + sr_q * (1 - self.mix)
 
     def sample_action(self, state):
