@@ -92,6 +92,7 @@ class TDAC(BaseAgent):
         poltype="softmax",
         beta=1e4,
         epsilon=1e-1,
+        **kwargs,
     ):
         super().__init__(state_size, action_size, lr, gamma, poltype, beta)
         self.c_w = np.zeros([state_size])

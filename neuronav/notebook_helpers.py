@@ -13,7 +13,7 @@ class AgentParams:
     poltype: str
     beta: float
     epsilon: float
-    learning_rate: float
+    lr: float
     gamma: float
 
 
