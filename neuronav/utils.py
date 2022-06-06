@@ -27,6 +27,23 @@ def run_episode(
     return agent, steps
 
 
+def run_multiple_episodes(
+    env, agent, n_episodes, max_steps_per_episode, start_pos=None, reward_locs=None, random_start=False,
+):
+    
+    rewards_per_episode = []
+
+    for _ in range(n_episodes):
+        agent, steps, rewards = run_episode(
+            env, agent, max_steps_per_episode, 
+            start_pos, reward_locs, random_start,
+            track_rewards=True,
+        )
+        rewards_per_episode.append(sum(rewards))
+    
+    return agent, rewards_per_episode
+
+
 def onehot(value, max_value):
     vec = np.zeros(max_value)
     if value >= max_value:
