@@ -21,16 +21,16 @@ class MBV(BaseAgent):
         poltype="softmax",
         weights="direct",
         epsilon=1e-1,
+        deterministic=True,
         **kwargs
     ):
         super().__init__(state_size, action_size, lr, gamma, poltype, beta)
         self.weights = weights
-        self.T = np.stack(
-            [
-                np.zeros([self.state_size, self.state_size])
-                for _ in range(self.action_size)
-            ]
-        )
+        self.deterministic = deterministic
+        self.T = np.zeros([self.action_size, self.state_size, self.state_size])
+        if not self.deterministic:
+            self.T_counts = np.zeros_like(self.T)
+            self.T_updated = True
         self.w = np.zeros(state_size)
         self.base_Q = np.zeros([self.action_size, self.state_size])
 
@@ -63,7 +63,11 @@ class MBV(BaseAgent):
         s_a = current_exp[1]
         s_1 = current_exp[2]
 
-        self.T[s_a, s] = utils.onehot(s_1, self.state_size)
+        if self.deterministic:
+            self.T[s_a, s] = utils.onehot(s_1, self.state_size)
+        else:  # update transition counts rather than directly updating the matrix
+            self.T_counts[s_a, s] = (self.gamma * self.T_counts[s_a, s]) + utils.onehot(s_1, self.state_size)
+            self.T_updated = False
 
         return 0.0
 
@@ -93,16 +97,45 @@ class MBV(BaseAgent):
 
     @property
     def Q(self):
+        if not self.deterministic and not self.T_updated:
+            self.T = self.T_counts / self.T_counts.sum(axis=2, keepdims=True)
+            self.T[np.isnan(self.T)] = 0
+            self.T_updated = True
+
         iters = 1
         for h in range(iters):
             for i in range(self.state_size):
                 for j in range(self.action_size):
                     if np.sum(self.T[j][i]) > 0:
-                        v_next = np.max(self.base_Q[:, np.argmax(self.T[j][i])])
+                        if self.deterministic:
+                            v_next = np.max(self.base_Q[:, np.argmax(self.T[j][i])])
+                        else:  # If not deterministic, take a weighted average of the next states
+                            v_next = np.max(self.base_Q @ self.T[j][i])
                     else:
                         v_next = 0
                     self.base_Q[j, i] = self.w[i] + self.gamma * v_next
         return self.base_Q.copy()
+
+
+class NondeterministicMBV(MBV):
+    """
+    Implementation of Model-Based Value Iteration Algorithm
+    """
+
+    def __init__(
+        self,
+        state_size,
+        action_size,
+        gamma=0.99,
+        lr=1e-1,
+        beta=1e4,
+        poltype="softmax",
+        weights="direct",
+        epsilon=1e-1,
+        **kwargs
+    ):
+        super().__init__(state_size, action_size, gamma, lr, beta, poltype, weights, epsilon, 
+            deterministic=False)
 
 
 class SRMB(BaseAgent):
